@@ -106,7 +106,7 @@ class ModuleTopic_MapperTopic extends Mapper {
 	 * @return bool
 	 */
 	public function DeleteTopicContentByTopicId($iTopicId) {
-		$sql = "DELETE FROM ".Config::Get('db.table.topic_content')." WHERE topic_id = ?d ";
+		$sql = "UPDATE ".Config::Get('db.table.topic_content')." SET `is_deleted` = TRUE WHERE topic_id = ?d ";
 		if ($this->oDb->query($sql,$iTopicId)) {
 			return true;
 		}
@@ -119,7 +119,9 @@ class ModuleTopic_MapperTopic extends Mapper {
 	 * @return bool
 	 */
 	public function DeleteTopicTagsByTopicId($sTopicId) {
-		$sql = "DELETE FROM ".Config::Get('db.table.topic_tag')." 
+		$sql = "UPDATE ".Config::Get('db.table.topic_tag')." 
+			SET
+				is_deleted = TRUE
 			WHERE
 				topic_id = ?d				
 		";
@@ -136,7 +138,9 @@ class ModuleTopic_MapperTopic extends Mapper {
 	 * @return bool
 	 */
 	public function DeleteTopic($sTopicId) {
-		$sql = "DELETE FROM ".Config::Get('db.table.topic')." 
+		$sql = "UPDATE ".Config::Get('db.table.topic')." 
+			SET
+				is_deleted = TRUE
 			WHERE
 				topic_id = ?d				
 		";
@@ -158,6 +162,8 @@ class ModuleTopic_MapperTopic extends Mapper {
 				topic_text_hash =? 						
 				AND
 				user_id = ?d
+				AND
+				is_deleted = FALSE
 			LIMIT 0,1
 				";
 		if ($aRow=$this->oDb->selectRow($sql,$sHash,$sUserId)) {
@@ -183,7 +189,9 @@ class ModuleTopic_MapperTopic extends Mapper {
 					".Config::Get('db.table.topic')." as t	
 					JOIN  ".Config::Get('db.table.topic_content')." AS tc ON t.topic_id=tc.topic_id				
 				WHERE 
-					t.topic_id IN(?a) 									
+					t.topic_id IN(?a)
+					AND
+					t.is_deleted = FALSE
 				ORDER BY FIELD(t.topic_id,?a) ";
 		$aTopics=array();
 		if ($aRows=$this->oDb->select($sql,$aArrayId,$aArrayId)) {
@@ -221,7 +229,9 @@ class ModuleTopic_MapperTopic extends Mapper {
 						1=1					
 						".$sWhere."
 						AND
-						t.blog_id=b.blog_id										
+						t.blog_id=b.blog_id
+						AND
+						t.is_deleted = FALSE
 					ORDER BY ".
 			implode(', ', $aFilter['order'])
 			."
@@ -249,11 +259,11 @@ class ModuleTopic_MapperTopic extends Mapper {
 					".Config::Get('db.table.blog')." as b
 				WHERE 
 					1=1
-					
-					".$sWhere."								
-					
+					".$sWhere."									
 					AND
-					t.blog_id=b.blog_id;";
+					t.blog_id=b.blog_id
+					AND
+					t.is_deleted = FALSE;";
 		if ($aRow=$this->oDb->selectRow($sql)) {
 			return $aRow['count'];
 		}
@@ -284,7 +294,9 @@ class ModuleTopic_MapperTopic extends Mapper {
 						1=1					
 						".$sWhere."
 						AND
-						t.blog_id=b.blog_id										
+						t.blog_id=b.blog_id
+						AND
+						t.is_deleted = FALSE
 					ORDER by ".implode(', ', $aFilter['order'])." ";
 		$aTopics=array();
 		if ($aRows=$this->oDb->select($sql)) {
@@ -295,41 +307,7 @@ class ModuleTopic_MapperTopic extends Mapper {
 
 		return $aTopics;
 	}
-	/**
-	 * Получает список топиков по тегу
-	 *
-	 * @param  string $sTag	Тег
-	 * @param  array    $aExcludeBlog	Список ID блогов для исключения
-	 * @param  int    $iCount	Возвращает общее количество элементов
-	 * @param  int    $iCurrPage	Номер страницы
-	 * @param  int    $iPerPage	Количество элементов на страницу
-	 * @return array
-	 */
-	public function GetTopicsByTag($sTag,$aExcludeBlog,&$iCount,$iCurrPage,$iPerPage) {
-		$sql = "				
-							SELECT 		
-								topic_id										
-							FROM 
-								".Config::Get('db.table.topic_tag')."								
-							WHERE 
-								topic_tag_text = ? 	
-								{ AND blog_id NOT IN (?a) }
-                            ORDER BY topic_id DESC	
-                            LIMIT ?d, ?d ";
 
-		$aTopics=array();
-		if ($aRows=$this->oDb->selectPage(
-			$iCount,$sql,$sTag,
-			(is_array($aExcludeBlog)&&count($aExcludeBlog)) ? $aExcludeBlog : DBSIMPLE_SKIP,
-			($iCurrPage-1)*$iPerPage, $iPerPage
-		)
-		) {
-			foreach ($aRows as $aTopic) {
-				$aTopics[]=$aTopic['topic_id'];
-			}
-		}
-		return $aTopics;
-	}
 	/**
 	 * Получает топики по рейтингу и дате
 	 *
@@ -349,7 +327,8 @@ class ModuleTopic_MapperTopic extends Mapper {
 						t.topic_date_add >= ?
 						AND
 						t.topic_rating >= 0
-						{ AND t.blog_id NOT IN(?a) } 																	
+						{ AND t.blog_id NOT IN(?a) } 	
+						{ AND t.is_deleted = FALSE }
 					ORDER by t.topic_rating desc, t.topic_id desc
 					LIMIT 0, ?d ";
 		$aTopics=array();
@@ -380,7 +359,8 @@ class ModuleTopic_MapperTopic extends Mapper {
 				".Config::Get('db.table.topic_tag')." as tt
 			WHERE 
 				1=1
-				{AND tt.topic_id NOT IN(?a) }		
+				{ AND tt.topic_id NOT IN(?a) }	
+				{ AND tt.is_deleted = FALSE }
 			GROUP BY 
 				tt.topic_tag_text
 			ORDER BY 
@@ -427,6 +407,8 @@ class ModuleTopic_MapperTopic extends Mapper {
 				tt.blog_id = b.blog_id
 				AND
 				b.blog_type <> 'close'
+				AND
+				t.is_deleted = FALSE
 			GROUP BY 
 				tt.topic_tag_text
 			ORDER BY 
@@ -617,7 +599,7 @@ class ModuleTopic_MapperTopic extends Mapper {
 			FROM 
 				".Config::Get('db.table.topic_tag')."	
 			WHERE
-				topic_tag_text LIKE ?			
+				topic_tag_text LIKE ?
 			GROUP BY 
 				topic_tag_text					
 			LIMIT 0, ?d		
@@ -674,9 +656,11 @@ class ModuleTopic_MapperTopic extends Mapper {
 	 */
 	public function DeleteTopicReadByArrayId($aTopicId) {
 		$sql = "
-			DELETE FROM ".Config::Get('db.table.topic_read')." 
+			UPDATE ".Config::Get('db.table.topic_read')." 
+			SET
+				is_deleted = TRUE
 			WHERE
-				topic_id IN(?a)				
+				topic_id IN(?a)		
 		";
 		if ($this->oDb->query($sql,$aTopicId)) {
 			return true;
@@ -703,6 +687,8 @@ class ModuleTopic_MapperTopic extends Mapper {
 					t.topic_id IN(?a)
 					AND
 					t.user_id = ?d 
+					AND
+					t.is_deleted = FALSE
 				";
 		$aReads=array();
 		if ($aRows=$this->oDb->select($sql,$aArrayId,$sUserId)) {
@@ -724,7 +710,7 @@ class ModuleTopic_MapperTopic extends Mapper {
 			user_voter_id,
 			answer		
 			)
-			VALUES(?d,  ?d,	?f)
+			VALUES(?d, ?d, ?f)
 		";
 		if ($this->oDb->query($sql,$oTopicQuestionVote->getTopicId(),$oTopicQuestionVote->getVoterId(),$oTopicQuestionVote->getAnswer())===0)
 		{
