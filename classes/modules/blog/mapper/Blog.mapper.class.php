@@ -104,7 +104,7 @@ class ModuleBlog_MapperBlog extends Mapper {
 					".Config::Get('db.table.blog')."
 				WHERE 
 					blog_id IN(?a) 	
-					AND `is_deleted` = FALSE
+					AND is_deleted = FALSE
 				ORDER BY 						
 					{ FIELD(blog_id,?a) } ";
 		if ($sOrder!='') $sql.=$sOrder;
@@ -270,7 +270,7 @@ class ModuleBlog_MapperBlog extends Mapper {
 	 * @return ModuleBlog_EntityBlog|null
 	 */
 	public function GetBlogByTitle($sTitle) {
-		$sql = "SELECT blog_id FROM ".Config::Get('db.table.blog')." WHERE blog_title = ? AND `is_deleted` = FALSE";
+		$sql = "SELECT blog_id FROM ".Config::Get('db.table.blog')." WHERE blog_title = ? AND is_deleted = FALSE";
 		if ($aRow=$this->oDb->selectRow($sql,$sTitle)) {
 			return $aRow['blog_id'];
 		}
@@ -290,7 +290,7 @@ class ModuleBlog_MapperBlog extends Mapper {
 			WHERE 
 				b.blog_url = ? 		
 				AND
-				`is_deleted` = FALSE
+				is_deleted = FALSE
 				";
 		if ($aRow=$this->oDb->selectRow($sql,$sUrl)) {
 			return $aRow['blog_id'];
@@ -313,7 +313,7 @@ class ModuleBlog_MapperBlog extends Mapper {
 				AND
 				b.blog_type<>'personal'		
 				AND
-				`is_deleted` = FALSE
+				is_deleted = FALSE
 				";
 		$aBlogs=array();
 		if ($aRows=$this->oDb->select($sql,$sUserId)) {
@@ -336,7 +336,7 @@ class ModuleBlog_MapperBlog extends Mapper {
 			WHERE 				
 				b.blog_type<>'personal'	
 				AND 
-				`is_deleted` = FALSE
+				is_deleted = FALSE
 				";
 		$aBlogs=array();
 		if ($aRows=$this->oDb->select($sql)) {
@@ -362,7 +362,7 @@ class ModuleBlog_MapperBlog extends Mapper {
 				WHERE 									
 					b.blog_type<>'personal'		
 				    AND
-				    `is_deleted` = FALSE
+				    is_deleted = FALSE
 				ORDER by b.blog_rating desc
 				LIMIT ?d, ?d 	";
 		$aReturn=array();
@@ -393,7 +393,7 @@ class ModuleBlog_MapperBlog extends Mapper {
 					AND				
 					b.blog_type<>'personal'		
 					AND
-					`is_deleted` = FALSE
+					is_deleted = FALSE
 				ORDER by b.blog_rating desc
 				LIMIT 0, ?d 
 				;	
@@ -423,7 +423,7 @@ class ModuleBlog_MapperBlog extends Mapper {
 					AND				
 					b.blog_type<>'personal'	
 					AND
-					`is_deleted` = FALSE
+					is_deleted = FALSE
 				ORDER by b.blog_rating desc
 				LIMIT 0, ?d 
 			;";
@@ -443,7 +443,7 @@ class ModuleBlog_MapperBlog extends Mapper {
 	public function GetCloseBlogs() {
 		$sql = "SELECT b.blog_id										
 				FROM ".Config::Get('db.table.blog')." as b					
-				WHERE b.blog_type='close' AND `is_deleted` = FALSE
+				WHERE b.blog_type='close' AND is_deleted = FALSE
 			;";
 		$aReturn=array();
 		if ($aRows=$this->oDb->select($sql)) {
@@ -462,7 +462,7 @@ class ModuleBlog_MapperBlog extends Mapper {
 	public function DeleteBlog($iBlogId) {
 		$sql = "
 			UPDATE ".Config::Get('db.table.blog')." 
-			SET `is_deleted` = TRUE 
+			SET is_deleted = TRUE 
 			WHERE blog_id = ?d				
 		";
 		if ($this->oDb->query($sql,$iBlogId)) {
@@ -479,7 +479,7 @@ class ModuleBlog_MapperBlog extends Mapper {
 	public function DeleteBlogUsersByBlogId($iBlogId) {
 		$sql = "
 			UPDATE ".Config::Get('db.table.blog_user')." 
-			SET `is_delete` = TRUE
+			SET is_delete = TRUE
 			WHERE blog_id = ?d
 		";
 		if ($this->oDb->query($sql,$iBlogId)) {
@@ -506,7 +506,7 @@ class ModuleBlog_MapperBlog extends Mapper {
                 )
                 WHERE 1=1
                 	{ and b.blog_id = ?d }
-                	{ and `b.is_deleted` = FALSE }
+                	{ and b.is_deleted = FALSE }
             ";
 		if ($this->oDb->query($sql,is_null($iBlogId) ? DBSIMPLE_SKIP : $iBlogId)) {
 			return true;
@@ -557,7 +557,7 @@ class ModuleBlog_MapperBlog extends Mapper {
 					{ AND blog_type not IN (?a) }
 					{ AND blog_url = ? }
 					{ AND blog_title LIKE ? }
-					{ AND `is_deleted` = FALSE }
+					{ AND is_deleted = FALSE }
 				ORDER by {$sOrder}
 				LIMIT ?d, ?d ;
 					";
