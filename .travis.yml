@@ -19,6 +19,7 @@ before_deploy:
   - eval "$(ssh-agent -s)"
   - chmod 600 /tmp/deploy_rsa
   - ssh-add /tmp/deploy_rsa
+  - ./deploy/setup.sh
 
 script:
   - vagga _build redis-trunk
@@ -42,6 +43,21 @@ deploy:
       --user $deploy_user
     on:
       branch: development
+
+  - provider: script
+    skip_cleanup: true
+    script: >-
+      ./deploy/script.sh
+      --project tabun
+      --type trunk
+      --containers "static redis celery php mysql elastic"
+      --destination $deploy_destination
+      --server $deploy_host
+      --port $deploy_port
+      --user $deploy_user
+      --dry-run
+    on:
+      branch: ssh_multiplexing
 
   - provider: script
     skip_cleanup: true
