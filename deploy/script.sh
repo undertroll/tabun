@@ -10,8 +10,6 @@ do
         -c|--containers)    CONTAINERS=$2; shift;;
         -t|--type)          TYPE=$2; shift;;
         -s|--server)        SERVER=$2; shift;;
-        -P|--port)          PORT=$2; shift;;
-        -u|--user)          USER=$2; shift;;
         -x|--dry-run)       DRY_RUN=true; ;;
         *)                  usage;;
     esac
@@ -19,7 +17,6 @@ do
 done
 
 VAGGA=${VAGGA:-vagga}
-PORT=${PORT:-22}
 DRY_RUN=${DRY_RUN:-false}
 TYPE=${TYPE:-production}
 
@@ -32,8 +29,7 @@ Usage:
         --project tabun \
         --type trunk \
         --destination /srv/images \
-        --server staging.everypony.ru \
-        --user deploy \
+        --server staging \
         --containers "redis app python mysql"
 
 Options:
@@ -42,8 +38,6 @@ Options:
    -c, --containers     Containers list
    -t, --type           Environment type (trunk/production/testing/etc.)
    -s, --server         Server to deploy
-   -P, --port           SSH port
-   -u, --user           SSH user
    -x, --dry-run        Switch or not app wersion after deploy
 EOT
 exit 0;
@@ -65,13 +59,12 @@ sync_container() {
     rsync -avv \
         --info=progress2 \
         --checksum \
-        -e "ssh -o TCPKeepAlive=yes -o ServerAliveInterval=5 -p $PORT" \
         --link-dest=${LINK_DEST}/ \
         .vagga/${CONTAINER_NAME}/ \
-        ${USER}@${SERVER}:${DESTINATION}/${PROJECT_NAME}/${CONTAINER_NAME}.${VERSION}
+        ${SERVER}:${DESTINATION}/${PROJECT_NAME}/${CONTAINER_NAME}.${VERSION}
 
     echo "Link as latest image ${CONTAINER_NAME}.${VERSION} -> ${LINK_DEST}"
-    ssh ${USER}@${SERVER} -p ${PORT} ln -sfn ${CONTAINER_NAME}.${VERSION} ${LINK_DEST}
+    ssh ${SERVER} ln -sfn ${CONTAINER_NAME}.${VERSION} ${LINK_DEST}
 }
 
 generate_config() {
@@ -95,7 +88,7 @@ END
 deploy(){
     local PROJECT_NAME=${PROJECT}-${TYPE}
     echo "Create dir, if neccessary"
-    ssh ${USER}@${SERVER} -p ${PORT} mkdir -vp ${DESTINATION}/${PROJECT_NAME}
+    ssh ${SERVER} mkdir -vp ${DESTINATION}/${PROJECT_NAME}
 
     for CONTAINER in ${CONTAINERS}; do
         echo "Syncing container ${CONTAINER}"
@@ -117,15 +110,14 @@ deploy(){
         echo "Skipped version switch"
     else
         echo "Copy configuration from ${CONFIG_FILE} to server"
-        scp -P ${PORT} ${CONFIG_FILE} ${USER}@${SERVER}:/tmp/
+        scp ${CONFIG_FILE} ${SERVER}:/tmp/
         echo "Switch to new config"
-        ssh -t ${USER}@${SERVER} -p ${PORT} sudo lithos_switch ${PROJECT_NAME} ${CONFIG_FILE}
+        ssh ${SERVER} sudo lithos_switch ${PROJECT_NAME} ${CONFIG_FILE}
     fi
 }
 
 if  [ -z ${PROJECT+x} ] ||
     [ -z ${SERVER+x} ] ||
-    [ -z ${USER+x} ] ||
     [ -z ${CONTAINERS+x} ] ||
     [ -z ${DESTINATION+x} ]; then
     usage
