@@ -16,6 +16,9 @@ install:
 before_deploy:
   - ./deploy/setup.sh
 
+after_deploy:
+  ssh -O exit work
+
 script:
   - vagga _build redis-trunk
   - vagga _build celery-trunk

@@ -16,4 +16,6 @@ Host work
     Port ${deploy_port}
     TCPKeepAlive yes
     ServerAliveInterval 5
+    ControlMaster auto
+    ControlPath /tmp/%r@%h:%p
 END
